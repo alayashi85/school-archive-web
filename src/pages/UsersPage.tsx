@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 
 import { apiRequest } from "../api/api";
 
+import "./UsersPage.css";
+
 type UserRole = "ADMIN" | "USER";
 
 interface UserItem {
@@ -33,6 +35,31 @@ export default function UsersPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const [
+    actionDialog,
+    setActionDialog,
+  ] = useState<{
+    type: "toggle" | "role";
+    user: UserItem;
+    newActive?: boolean;
+    newRole?: UserRole;
+  } | null>(null);
+
+  const [
+    passwordDialogUser,
+    setPasswordDialogUser,
+  ] = useState<UserItem | null>(null);
+
+  const [
+    newPassword,
+    setNewPassword,
+  ] = useState("");
+
+  const [
+    actionSaving,
+    setActionSaving,
+  ] = useState(false);
 
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
@@ -78,6 +105,73 @@ export default function UsersPage() {
     loadUsers();
   }, []);
 
+  useEffect(() => {
+    if (!error) {
+      return;
+    }
+
+    const timer =
+      window.setTimeout(
+        () => setError(""),
+        5000
+      );
+
+    return () =>
+      window.clearTimeout(timer);
+  }, [error]);
+
+  useEffect(() => {
+    if (!success) {
+      return;
+    }
+
+    const timer =
+      window.setTimeout(
+        () => setSuccess(""),
+        4000
+      );
+
+    return () =>
+      window.clearTimeout(timer);
+  }, [success]);
+
+  useEffect(() => {
+    if (
+      !actionDialog &&
+      !passwordDialogUser
+    ) {
+      return;
+    }
+
+    function handleEscape(
+      event: globalThis.KeyboardEvent
+    ) {
+      if (
+        event.key === "Escape" &&
+        !actionSaving
+      ) {
+        setActionDialog(null);
+        setPasswordDialogUser(null);
+        setNewPassword("");
+      }
+    }
+
+    window.addEventListener(
+      "keydown",
+      handleEscape
+    );
+
+    return () =>
+      window.removeEventListener(
+        "keydown",
+        handleEscape
+      );
+  }, [
+    actionDialog,
+    passwordDialogUser,
+    actionSaving,
+  ]);
+
   async function handleCreateUser(
     event: FormEvent
   ) {
@@ -122,63 +216,23 @@ export default function UsersPage() {
     }
   }
 
-  async function handleToggleUser(
+  function handleToggleUser(
     user: UserItem
   ) {
     const newActive =
-      user.is_active === 1
-        ? false
-        : true;
+      user.is_active !== 1;
 
-    const confirmed =
-      window.confirm(
-        newActive
-          ? `هل تريد تفعيل المستخدم ${user.username}؟`
-          : `هل تريد تعطيل المستخدم ${user.username}؟`
-      );
+    setError("");
+    setSuccess("");
 
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      setError("");
-      setSuccess("");
-
-      await apiRequest(
-        `/api/users/${user.id}`,
-        {
-          method: "PUT",
-          body: JSON.stringify({
-            fullName:
-              user.full_name,
-
-            role:
-              user.role,
-
-            isActive:
-              newActive,
-          }),
-        }
-      );
-
-      setSuccess(
-        newActive
-          ? "تم تفعيل المستخدم"
-          : "تم تعطيل المستخدم"
-      );
-
-      await loadUsers();
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "حدث خطأ أثناء تحديث المستخدم"
-      );
-    }
+    setActionDialog({
+      type: "toggle",
+      user,
+      newActive,
+    });
   }
 
-  async function handleChangeRole(
+  function handleChangeRole(
     user: UserItem
   ) {
     const newRole: UserRole =
@@ -186,23 +240,33 @@ export default function UsersPage() {
         ? "USER"
         : "ADMIN";
 
-    const confirmed =
-      window.confirm(
-        `هل تريد تغيير صلاحية ${user.username} إلى ${
-          newRole === "ADMIN"
-            ? "مدير"
-            : "مستخدم"
-        }؟`
-      );
+    setError("");
+    setSuccess("");
 
-    if (!confirmed) {
+    setActionDialog({
+      type: "role",
+      user,
+      newRole,
+    });
+  }
+
+  async function confirmUserAction() {
+    if (!actionDialog) {
       return;
     }
 
-    try {
-      setError("");
-      setSuccess("");
+    const {
+      type,
+      user,
+      newActive,
+      newRole,
+    } = actionDialog;
 
+    setActionSaving(true);
+    setError("");
+    setSuccess("");
+
+    try {
       await apiRequest(
         `/api/users/${user.id}`,
         {
@@ -212,37 +276,57 @@ export default function UsersPage() {
               user.full_name,
 
             role:
-              newRole,
+              type === "role"
+                ? newRole
+                : user.role,
 
             isActive:
-              user.is_active === 1,
+              type === "toggle"
+                ? newActive
+                : user.is_active === 1,
           }),
         }
       );
 
-      setSuccess(
-        "تم تغيير صلاحية المستخدم"
-      );
+      if (type === "toggle") {
+        setSuccess(
+          newActive
+            ? "تم تفعيل المستخدم"
+            : "تم تعطيل المستخدم"
+        );
+      } else {
+        setSuccess(
+          "تم تغيير صلاحية المستخدم"
+        );
+      }
+
+      setActionDialog(null);
 
       await loadUsers();
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "حدث خطأ أثناء تغيير الصلاحية"
+          : type === "toggle"
+            ? "حدث خطأ أثناء تحديث المستخدم"
+            : "حدث خطأ أثناء تغيير الصلاحية"
       );
+    } finally {
+      setActionSaving(false);
     }
   }
 
-  async function handleResetPassword(
+  function handleResetPassword(
     user: UserItem
   ) {
-    const newPassword =
-      window.prompt(
-        `أدخل كلمة المرور الجديدة للمستخدم ${user.username}`
-      );
+    setError("");
+    setSuccess("");
+    setNewPassword("");
+    setPasswordDialogUser(user);
+  }
 
-    if (!newPassword) {
+  async function confirmResetPassword() {
+    if (!passwordDialogUser) {
       return;
     }
 
@@ -254,17 +338,17 @@ export default function UsersPage() {
       return;
     }
 
-    try {
-      setError("");
-      setSuccess("");
+    setActionSaving(true);
+    setError("");
+    setSuccess("");
 
+    try {
       await apiRequest(
-        `/api/users/${user.id}/password`,
+        `/api/users/${passwordDialogUser.id}/password`,
         {
           method: "PUT",
           body: JSON.stringify({
-            password:
-              newPassword,
+            password: newPassword,
           }),
         }
       );
@@ -272,13 +356,28 @@ export default function UsersPage() {
       setSuccess(
         "تم تغيير كلمة المرور بنجاح"
       );
+
+      setPasswordDialogUser(null);
+      setNewPassword("");
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
           : "حدث خطأ أثناء تغيير كلمة المرور"
       );
+    } finally {
+      setActionSaving(false);
     }
+  }
+
+  function closeDialogs() {
+    if (actionSaving) {
+      return;
+    }
+
+    setActionDialog(null);
+    setPasswordDialogUser(null);
+    setNewPassword("");
   }
 
   return (
@@ -306,15 +405,69 @@ export default function UsersPage() {
         </button>
       </header>
 
-      {error && (
-        <div className="error-message">
-          {error}
-        </div>
-      )}
+      {(error || success) && (
+        <div
+          className="users-toast-stack"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {error && (
+            <div
+              className="users-toast users-toast-error"
+              role="alert"
+            >
+              <div className="users-toast-icon">
+                !
+              </div>
 
-      {success && (
-        <div className="success-message">
-          {success}
+              <div className="users-toast-content">
+                <strong>
+                  تعذر إكمال العملية
+                </strong>
+                <span>{error}</span>
+              </div>
+
+              <button
+                type="button"
+                className="users-toast-close"
+                onClick={() =>
+                  setError("")
+                }
+                aria-label="إغلاق الإشعار"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+          {success && (
+            <div
+              className="users-toast users-toast-success"
+              role="status"
+            >
+              <div className="users-toast-icon">
+                ✓
+              </div>
+
+              <div className="users-toast-content">
+                <strong>
+                  تمت العملية بنجاح
+                </strong>
+                <span>{success}</span>
+              </div>
+
+              <button
+                type="button"
+                className="users-toast-close"
+                onClick={() =>
+                  setSuccess("")
+                }
+                aria-label="إغلاق الإشعار"
+              >
+                ×
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -535,6 +688,178 @@ export default function UsersPage() {
           </div>
         )}
       </section>
+
+      {actionDialog && (
+        <div
+          className="users-dialog-backdrop"
+          onMouseDown={closeDialogs}
+        >
+          <div
+            className="users-confirm-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="user-action-title"
+            onMouseDown={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <div className="users-confirm-icon">
+              !
+            </div>
+
+            <div className="users-confirm-body">
+              <h2 id="user-action-title">
+                {actionDialog.type === "toggle"
+                  ? actionDialog.newActive
+                    ? "تفعيل المستخدم؟"
+                    : "تعطيل المستخدم؟"
+                  : "تغيير صلاحية المستخدم؟"}
+              </h2>
+
+              <p>
+                {actionDialog.type === "toggle"
+                  ? actionDialog.newActive
+                    ? "سيتم السماح للمستخدم بتسجيل الدخول واستخدام النظام."
+                    : "سيتم منع المستخدم من تسجيل الدخول إلى النظام."
+                  : `سيتم تغيير الصلاحية إلى ${
+                      actionDialog.newRole === "ADMIN"
+                        ? "مدير"
+                        : "مستخدم"
+                    }.`}
+              </p>
+
+              <div className="users-confirm-user">
+                <span>المستخدم</span>
+                <strong>
+                  {actionDialog.user.full_name}
+                </strong>
+                <small>
+                  {actionDialog.user.username}
+                </small>
+              </div>
+            </div>
+
+            <div className="users-confirm-actions">
+              <button
+                type="button"
+                className="users-confirm-cancel"
+                onClick={closeDialogs}
+                disabled={actionSaving}
+              >
+                إلغاء
+              </button>
+
+              <button
+                type="button"
+                className={
+                  actionDialog.type === "toggle" &&
+                  actionDialog.newActive === false
+                    ? "users-confirm-danger"
+                    : "users-confirm-primary"
+                }
+                onClick={confirmUserAction}
+                disabled={actionSaving}
+                autoFocus
+              >
+                {actionSaving
+                  ? "جاري التنفيذ..."
+                  : "تأكيد"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {passwordDialogUser && (
+        <div
+          className="users-dialog-backdrop"
+          onMouseDown={closeDialogs}
+        >
+          <div
+            className="users-confirm-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="password-dialog-title"
+            onMouseDown={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <div className="users-password-icon">
+              •••
+            </div>
+
+            <div className="users-confirm-body">
+              <h2 id="password-dialog-title">
+                تغيير كلمة المرور
+              </h2>
+
+              <p>
+                أدخل كلمة مرور جديدة للمستخدم
+                التالي. يجب أن تتكون من 8 أحرف
+                على الأقل.
+              </p>
+
+              <div className="users-confirm-user">
+                <span>المستخدم</span>
+                <strong>
+                  {passwordDialogUser.full_name}
+                </strong>
+                <small>
+                  {passwordDialogUser.username}
+                </small>
+              </div>
+
+              <label className="users-password-field">
+                كلمة المرور الجديدة
+                <input
+                  type="password"
+                  value={newPassword}
+                  minLength={8}
+                  autoComplete="new-password"
+                  autoFocus
+                  onChange={(event) =>
+                    setNewPassword(
+                      event.target.value
+                    )
+                  }
+                  onKeyDown={(event) => {
+                    if (
+                      event.key === "Enter"
+                    ) {
+                      event.preventDefault();
+                      confirmResetPassword();
+                    }
+                  }}
+                />
+              </label>
+            </div>
+
+            <div className="users-confirm-actions">
+              <button
+                type="button"
+                className="users-confirm-cancel"
+                onClick={closeDialogs}
+                disabled={actionSaving}
+              >
+                إلغاء
+              </button>
+
+              <button
+                type="button"
+                className="users-confirm-primary"
+                onClick={
+                  confirmResetPassword
+                }
+                disabled={actionSaving}
+              >
+                {actionSaving
+                  ? "جاري الحفظ..."
+                  : "حفظ كلمة المرور"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

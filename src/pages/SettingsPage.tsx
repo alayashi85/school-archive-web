@@ -172,6 +172,36 @@ export default function SettingsPage() {
     loadSettings();
   }, []);
 
+  useEffect(() => {
+    if (!error) {
+      return;
+    }
+
+    const timer =
+      window.setTimeout(
+        () => setError(""),
+        5000
+      );
+
+    return () =>
+      window.clearTimeout(timer);
+  }, [error]);
+
+  useEffect(() => {
+    if (!success) {
+      return;
+    }
+
+    const timer =
+      window.setTimeout(
+        () => setSuccess(""),
+        4000
+      );
+
+    return () =>
+      window.clearTimeout(timer);
+  }, [success]);
+
   async function handleSave(
     event: FormEvent<HTMLFormElement>
   ) {
@@ -272,15 +302,69 @@ export default function SettingsPage() {
           </button>
         </header>
 
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
+                {(error || success) && (
+          <div
+            className="settings-toast-stack"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {error && (
+              <div
+                className="settings-toast settings-toast-error"
+                role="alert"
+              >
+                <div className="settings-toast-icon">
+                  !
+                </div>
 
-        {success && (
-          <div className="success-message">
-            {success}
+                <div className="settings-toast-content">
+                  <strong>
+                    تعذر إكمال العملية
+                  </strong>
+                  <span>{error}</span>
+                </div>
+
+                <button
+                  type="button"
+                  className="settings-toast-close"
+                  onClick={() =>
+                    setError("")
+                  }
+                  aria-label="إغلاق الإشعار"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
+            {success && (
+              <div
+                className="settings-toast settings-toast-success"
+                role="status"
+              >
+                <div className="settings-toast-icon">
+                  ✓
+                </div>
+
+                <div className="settings-toast-content">
+                  <strong>
+                    تمت العملية بنجاح
+                  </strong>
+                  <span>{success}</span>
+                </div>
+
+                <button
+                  type="button"
+                  className="settings-toast-close"
+                  onClick={() =>
+                    setSuccess("")
+                  }
+                  aria-label="إغلاق الإشعار"
+                >
+                  ×
+                </button>
+              </div>
+            )}
           </div>
         )}
 

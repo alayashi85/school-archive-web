@@ -343,3 +343,155 @@
     align-items: flex-start;
   }
 }
+
+/* ========================================
+   Toast notifications
+======================================== */
+
+.settings-toast-stack {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  z-index: 3000;
+
+  width: min(92vw, 480px);
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  transform: translateX(-50%);
+
+  pointer-events: none;
+}
+
+.settings-toast {
+  display: grid;
+  grid-template-columns:
+    38px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 12px;
+
+  padding: 13px 14px;
+
+  border: 1px solid;
+  border-radius: 12px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 14px 36px
+    rgba(15, 23, 42, 0.16);
+
+  pointer-events: auto;
+
+  animation:
+    settings-toast-in
+    180ms ease-out;
+}
+
+.settings-toast-success {
+  border-color: #bbf7d0;
+}
+
+.settings-toast-error {
+  border-color: #fecaca;
+}
+
+.settings-toast-icon {
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 999px;
+
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.settings-toast-success
+.settings-toast-icon {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.settings-toast-error
+.settings-toast-icon {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.settings-toast-content {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-toast-content strong {
+  color: #111827;
+  font-size: 14px;
+}
+
+.settings-toast-content span {
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.6;
+
+  overflow-wrap: anywhere;
+}
+
+.settings-toast-close {
+  width: 32px;
+  height: 32px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 0;
+  border-radius: 8px;
+
+  background: transparent;
+  color: #6b7280;
+
+  font-size: 22px;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.settings-toast-close:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+@keyframes settings-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 520px) {
+  .settings-toast-stack {
+    top: 10px;
+    width: calc(100vw - 20px);
+  }
+
+  .settings-toast {
+    grid-template-columns:
+      34px minmax(0, 1fr) 30px;
+
+    padding: 11px;
+  }
+}
