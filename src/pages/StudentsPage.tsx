@@ -109,6 +109,12 @@ export default function StudentsPage() {
   const [success, setSuccess] =
     useState("");
 
+  const [deleteTarget, setDeleteTarget] =
+    useState<Student | null>(null);
+
+  const [deleting, setDeleting] =
+    useState(false);
+
   const [newStudent, setNewStudent] =
     useState<StudentFormData>(
       emptyForm
@@ -190,6 +196,71 @@ export default function StudentsPage() {
   useEffect(() => {
     loadStudents();
   }, []);
+
+  useEffect(() => {
+    if (!error) {
+      return;
+    }
+
+    const timer =
+      window.setTimeout(
+        () => {
+          setError("");
+        },
+        5000
+      );
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [error]);
+
+  useEffect(() => {
+    if (!success) {
+      return;
+    }
+
+    const timer =
+      window.setTimeout(
+        () => {
+          setSuccess("");
+        },
+        4000
+      );
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [success]);
+
+  useEffect(() => {
+    if (!deleteTarget) {
+      return;
+    }
+
+    function handleEscape(
+      event: globalThis.KeyboardEvent
+    ) {
+      if (
+        event.key === "Escape" &&
+        !deleting
+      ) {
+        setDeleteTarget(null);
+      }
+    }
+
+    window.addEventListener(
+      "keydown",
+      handleEscape
+    );
+
+    return () => {
+      window.removeEventListener(
+        "keydown",
+        handleEscape
+      );
+    };
+  }, [deleteTarget, deleting]);
 
   useEffect(() => {
     if (firstLoad.current) {
@@ -418,26 +489,26 @@ export default function StudentsPage() {
     }
   }
 
-  async function handleDelete(
+  function handleDelete(
     student: Student
   ) {
-    const confirmed =
-      window.confirm(
-        `حذف نهائي\n\nسيتم حذف الطالب نهائيًا ولا يمكن استعادته:\n${getFullName(
-          student
-        )}\n\nهل تريد المتابعة؟`
-      );
+    setError("");
+    setSuccess("");
+    setDeleteTarget(student);
+  }
 
-    if (!confirmed) {
+  async function confirmDelete() {
+    if (!deleteTarget) {
       return;
     }
 
+    setDeleting(true);
     setError("");
     setSuccess("");
 
     try {
       await apiRequest(
-        `/api/students/${student.id}`,
+        `/api/students/${deleteTarget.id}`,
         {
           method: "DELETE",
         }
@@ -446,6 +517,8 @@ export default function StudentsPage() {
       setSuccess(
         "تم حذف الطالب نهائيًا"
       );
+
+      setDeleteTarget(null);
 
       await loadStudents(
         search
@@ -456,7 +529,17 @@ export default function StudentsPage() {
           ? err.message
           : "حدث خطأ أثناء حذف الطالب"
       );
+    } finally {
+      setDeleting(false);
     }
+  }
+
+  function cancelDelete() {
+    if (deleting) {
+      return;
+    }
+
+    setDeleteTarget(null);
   }
 
   function handleLogout() {
@@ -591,15 +674,61 @@ export default function StudentsPage() {
         </div>
       </section>
 
-      {error && (
-        <div className="error-message">
-          {error}
-        </div>
-      )}
+      {(error || success) && (
+        <div
+          className="students-toast-stack"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {error && (
+            <div
+              className="students-toast students-toast-error"
+              role="alert"
+            >
+              <div className="students-toast-icon">
+                !
+              </div>
 
-      {success && (
-        <div className="success-message">
-          {success}
+              <div className="students-toast-content">
+                <strong>تعذر إكمال العملية</strong>
+                <span>{error}</span>
+              </div>
+
+              <button
+                type="button"
+                className="students-toast-close"
+                onClick={() => setError("")}
+                aria-label="إغلاق الإشعار"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+          {success && (
+            <div
+              className="students-toast students-toast-success"
+              role="status"
+            >
+              <div className="students-toast-icon">
+                ✓
+              </div>
+
+              <div className="students-toast-content">
+                <strong>تمت العملية بنجاح</strong>
+                <span>{success}</span>
+              </div>
+
+              <button
+                type="button"
+                className="students-toast-close"
+                onClick={() => setSuccess("")}
+                aria-label="إغلاق الإشعار"
+              >
+                ×
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -1390,6 +1519,75 @@ export default function StudentsPage() {
           )}
         </div>
       </section>
+
+      {deleteTarget && (
+        <div
+          className="students-dialog-backdrop"
+          onMouseDown={cancelDelete}
+        >
+          <div
+            className="students-confirm-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-dialog-title"
+            aria-describedby="delete-dialog-description"
+            onMouseDown={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <div className="students-confirm-icon">
+              !
+            </div>
+
+            <div className="students-confirm-body">
+              <h2 id="delete-dialog-title">
+                حذف الطالب نهائيًا؟
+              </h2>
+
+              <p id="delete-dialog-description">
+                سيتم حذف سجل الطالب نهائيًا ولا يمكن
+                استعادته بعد تنفيذ العملية.
+              </p>
+
+              <div className="students-confirm-student">
+                <span>الطالب</span>
+                <strong>
+                  {getFullName(deleteTarget)}
+                </strong>
+
+                <small>
+                  السجل {deleteTarget.register_no}
+                  {" / "}
+                  الصفحة {deleteTarget.page_no}
+                </small>
+              </div>
+            </div>
+
+            <div className="students-confirm-actions">
+              <button
+                type="button"
+                className="students-confirm-cancel"
+                onClick={cancelDelete}
+                disabled={deleting}
+              >
+                إلغاء
+              </button>
+
+              <button
+                type="button"
+                className="students-confirm-delete"
+                onClick={confirmDelete}
+                disabled={deleting}
+                autoFocus
+              >
+                {deleting
+                  ? "جاري الحذف..."
+                  : "نعم، حذف نهائي"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

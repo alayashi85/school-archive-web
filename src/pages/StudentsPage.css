@@ -192,6 +192,308 @@
 }
 
 /* ========================================
+   Toast notifications
+======================================== */
+
+.students-toast-stack {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  z-index: 3000;
+
+  width: min(92vw, 480px);
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  transform: translateX(-50%);
+
+  pointer-events: none;
+}
+
+.students-toast {
+  display: grid;
+  grid-template-columns:
+    38px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 12px;
+
+  padding: 13px 14px;
+
+  border: 1px solid;
+  border-radius: 12px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 14px 36px
+    rgba(15, 23, 42, 0.16);
+
+  pointer-events: auto;
+
+  animation:
+    students-toast-in
+    180ms ease-out;
+}
+
+.students-toast-success {
+  border-color: #bbf7d0;
+}
+
+.students-toast-error {
+  border-color: #fecaca;
+}
+
+.students-toast-icon {
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 999px;
+
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.students-toast-success
+.students-toast-icon {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.students-toast-error
+.students-toast-icon {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.students-toast-content {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.students-toast-content strong {
+  color: #111827;
+  font-size: 14px;
+}
+
+.students-toast-content span {
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.6;
+
+  overflow-wrap: anywhere;
+}
+
+.students-toast-close {
+  width: 32px;
+  height: 32px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 0;
+  border-radius: 8px;
+
+  background: transparent;
+  color: #6b7280;
+
+  font-size: 22px;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.students-toast-close:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+@keyframes students-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========================================
+   Delete confirmation dialog
+======================================== */
+
+.students-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2500;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background:
+    rgba(15, 23, 42, 0.55);
+
+  backdrop-filter: blur(2px);
+}
+
+.students-confirm-dialog {
+  width: min(100%, 460px);
+
+  padding: 24px;
+
+  border:
+    1px solid #e5e7eb;
+  border-radius: 16px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 24px 60px
+    rgba(15, 23, 42, 0.24);
+
+  animation:
+    students-dialog-in
+    160ms ease-out;
+}
+
+.students-confirm-icon {
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 16px;
+
+  border-radius: 999px;
+
+  background: #fee2e2;
+  color: #b91c1c;
+
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.students-confirm-body h2 {
+  margin: 0 0 8px;
+
+  color: #111827;
+
+  font-size: 20px;
+}
+
+.students-confirm-body > p {
+  margin: 0;
+
+  color: #6b7280;
+
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.students-confirm-student {
+  margin-top: 18px;
+  padding: 14px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  border:
+    1px solid #e5e7eb;
+  border-radius: 11px;
+
+  background: #f9fafb;
+}
+
+.students-confirm-student span,
+.students-confirm-student small {
+  color: #6b7280;
+
+  font-size: 12px;
+}
+
+.students-confirm-student strong {
+  color: #111827;
+
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.students-confirm-actions {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 10px;
+
+  margin-top: 22px;
+}
+
+.students-confirm-actions button {
+  min-height: 44px;
+
+  padding: 9px 14px;
+
+  border: 0;
+  border-radius: 9px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.students-confirm-actions
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.students-confirm-cancel {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.students-confirm-delete {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.students-confirm-delete:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+@keyframes students-dialog-in {
+  from {
+    opacity: 0;
+    transform:
+      translateY(8px)
+      scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translateY(0)
+      scale(1);
+  }
+}
+
+/* ========================================
    Mobile
 ======================================== */
 
@@ -588,6 +890,30 @@
 }
 
 @media (max-width: 420px) {
+  .students-toast-stack {
+    top: 10px;
+    width: calc(100vw - 20px);
+  }
+
+  .students-toast {
+    grid-template-columns:
+      34px minmax(0, 1fr) 30px;
+
+    padding: 11px;
+  }
+
+  .students-dialog-backdrop {
+    padding: 12px;
+  }
+
+  .students-confirm-dialog {
+    padding: 18px;
+  }
+
+  .students-confirm-actions {
+    grid-template-columns: 1fr;
+  }
+
   .mobile-register-row {
     grid-template-columns:
       1fr;
